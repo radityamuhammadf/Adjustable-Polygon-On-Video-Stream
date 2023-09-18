@@ -3,9 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <title>Adjustable Polygon</title>
 </head>
 <body>
+    <h3>This is A Movable Dot</h3>
+    <div class="blank">
+        <!-- the movable dot -->
+        <div class="dot" id="movable-dot"></div>
+    </div>
     
+    <!-- the video stream -->
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 offset-lg-2">
+                <h3 class="mt=5">Live Streaming</h3>
+                <img src="{{url_for('video_feed')}}" alt="video stream" width="100%">
+            </div>
+        </div>
+    </div>
+
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
