@@ -1,26 +1,39 @@
 # importing the Computer Vision module
 import cv2
+from flask import Flask,Response,render_template
+
+app=Flask(__name__,static_url_path='/static')
+
+# capturing the video from webcam
+cap = cv2.VideoCapture(0)
 
 def stream():
-    # capturing the video from webcam
-    cap = cv2.VideoCapture(0)
 
     # running infinite loop
     while True:
         # reading frames from the video
-        ret, frame = cap.read()
+        success, frame = cap.read()
 
-        frame=cv2.resize(frame,(640,480))
-        # displaying the video
-        cv2.imshow('frame', frame)
-
-        # exiting the loop
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if not success:
             break
+        else:
+            # converting the collected frame to image
+            ret,buffer=cv2.imencode('.jpg',frame)
+            frame=cv2.resize(frame,(640,480))
+            frame=buffer.tobytes()# converting the image to bytes
+            yield(b'--frame\r\n' # yielding the frame for display
+                  b'Content-Type: image/jpeg\r\n\r\n'+frame+b'\r\n')
 
-    # closing the stream
-    cap.release()
-    cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     stream()
+    app.run(debug=True)
+
+@app.route('/')
+def hello_world():
+    # will render the index.html file present in templates folder
+    return render_template('index.html')
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(stream(),mimetype='multipart/x-mixed-replace; boundary=frame')
