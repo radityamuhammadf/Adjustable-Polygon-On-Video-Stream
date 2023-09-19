@@ -1,24 +1,53 @@
-const movableDot=document.getElementById('movable-dot');
+const rectangle = document.getElementById('rectangle');
+const dots = document.querySelectorAll('.dot');
 
-let isDragging=false;
+let isDragging = false;
+let currentDot = null;
+let startX, startY, startWidth, startHeight;
 
-// change mouse cursor style when "grabbing" the dot
-movableDot.addEventListener("mousedown",(e)=>{
-    isDragging=true;
-    movableDot.style.cursor="grabbing";
-})
+dots.forEach(dot => {
+   dot.addEventListener('mousedown', (e) => {
+       isDragging = true;
+       currentDot = dot;
+       startX = e.clientX;
+       startY = e.clientY;
+       startWidth = parseFloat(getComputedStyle(rectangle).width);
+       startHeight = parseFloat(getComputedStyle(rectangle).height);
+       e.preventDefault();
+   });
+});
 
-document.addEventListener("mousemove",(e)=>{
-    if(!isDragging) return;
+document.addEventListener('mousemove', (e) => {
+   if (!isDragging) return;
 
-    const x=e.clientX;// get mouse x position
-    const y=e.clientY;// get mouse y position
+   const offsetX = e.clientX - startX;
+   const offsetY = e.clientY - startY;
 
-    movableDot.style.left=x-movableDot.offsetWidth/2+"px";// set dot x position
-    movableDot.style.top=y-movableDot.offsetHeight/2+"px";// set dot y position
-})
+   switch (currentDot.id) {
+       case 'top-left':
+           rectangle.style.width = startWidth - offsetX + 'px';
+           rectangle.style.height = startHeight - offsetY + 'px';
+           rectangle.style.left = startX + offsetX + 'px';
+           rectangle.style.top = startY + offsetY + 'px';
+           break;
+       case 'top-right':
+           rectangle.style.width = startWidth + offsetX + 'px';
+           rectangle.style.height = startHeight - offsetY + 'px';
+           rectangle.style.top = startY + offsetY + 'px';
+           break;
+       case 'bottom-left':
+           rectangle.style.width = startWidth - offsetX + 'px';
+           rectangle.style.height = startHeight + offsetY + 'px';
+           rectangle.style.left = startX + offsetX + 'px';
+           break;
+       case 'bottom-right':
+           rectangle.style.width = startWidth + offsetX + 'px';
+           rectangle.style.height = startHeight + offsetY + 'px';
+           break;
+   }
+});
 
-document.addEventListener("mouseup",()=>{
-    isDragging=false;
-    movableDot.style.cursor="grab";
-})
+document.addEventListener('mouseup', () => {
+   isDragging = false;
+   currentDot = null;
+});

@@ -8,22 +8,17 @@
 </head>
 <body>
     <h3>This is A Movable Dot</h3>
-    <div class="blank">
-        <!-- the movable dot -->
-        <div class="dot" id="movable-dot"></div>
-    </div>
-    
-    <!-- the video stream -->
+    <!-- the frame -->
     <div class="container">
-        <div class="row">
-            <div class="col-lg-8 offset-lg-2">
-                <h3 class="mt=5">Live Streaming</h3>
-                <img src="{{url_for('video_feed')}}" alt="video stream" width="100%">
-            </div>
+        <div class="rectangle" id="rectangle">
+            <div class="dot" id="top-left"></div>
+            <div class="dot" id="top-right"></div>
+            <div class="dot" id="bottom-left"></div>
+            <div class="dot" id="bottom-right"></div>
         </div>
     </div>
 
-
+    
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
