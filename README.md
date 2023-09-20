@@ -1,4 +1,4 @@
-# Adjustable Polygon On Video Stream - OpenCV with Python
+# Adjustable Polygon On Video Stream - OpenCV (Python) with Flask
 
 ## How to start
 * Clone This Repository
