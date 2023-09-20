@@ -5,18 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <title>Adjustable Polygon</title>
-</head>
-<body>
-    <h3>This is A Movable Dot</h3>
-    <!-- the frame -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>
+  
+    <script type="text/javascript">
+        function draggablePolygon(polygon) {
+          var points = polygon.points;
+          var svgRoot = $(polygon).closest("svg");
+        
+          for (var i = 0; i < points.numberOfItems; i++) {
+            (function (i) { // close over variables for drag call back
+              var point = points.getItem(i);
+            
+              var handle = document.createElement("div"); //creating div element for creating the edge points 
+              handle.className = "handle";//setting the class name for the created div element
+              document.body.appendChild(handle);//appending the created div element to the body of the html page
+            
+              var base = svgRoot.position();//getting the position of the svg element
+              // center handles over polygon
+              var cs = window.getComputedStyle(handle, null);
+              base.left -= (parseInt(cs.width) + parseInt(cs.borderLeftWidth) + parseInt(cs.borderRightWidth))/2; //getting the width of the handle and setting the left position
+              base.top -= (parseInt(cs.height) + parseInt(cs.borderTopWidth) + parseInt(cs.borderBottomWidth))/2; //getting the height of the handle and setting the top position
+            
+              handle.style.left = base.left + point.x + "px";//setting the left position of the handle using the base.left and point.x values 
+              handle.style.top = base.top + point.y + "px";//setting the top position of the handle using the base.top and point.y values
+            
+              $(handle).draggable({ 
+                drag: function (event) { // handle drag events
+                  setTimeout(function () { // update polygon point from handle position
+                    point.x = parseInt(handle.style.left) - base.left; //setting the x value of the point
+                    point.y = parseInt(handle.style.top) - base.top; //setting the y value of the point
+                  },0);
+                }
+              });
+            }(i));
+          }
+        }
+    </script>
+</head><body>
     <div class="container">
-        <div class="rectangle" id="rectangle">
-            <div class="dot" id="top-left"></div>
-            <div class="dot" id="top-right"></div>
-            <div class="dot" id="bottom-left"></div>
-            <div class="dot" id="bottom-right"></div>
-        </div>
+        <img src="{{ url_for('video_feed') }}" width="100%">
+        <svg id="theSVG" width="640" height="480" style="border: 2px inset #8c6868;">
+            <!-- Instatiate The Polygon -->
+            <polygon id="x" points="100,200 200,200 100,100 100,150" style="opacity: 50%;"/>
+        </svg>
     </div>
+    <p>
+      (Offset to test)
+    </p>
+    
+    <script type="text/javascript">
+      draggablePolygon(document.getElementById("x"));
+    </script>
 
     
     <script src="{{ url_for('static', filename='script.js') }}"></script>

@@ -1,45 +1,27 @@
 body {
-    margin: 0;
+    margin: 10px;
 }
 
 .container {
     width: 640px;
     height: 480px;
+    color: beige;
     position: relative;
 }
 
-.rectangle {
+/* Styling The Adjustable Square */
+.handle {
     position: absolute;
-    width: 200px;
-    height: 100px;
-    background-color: #3498db;
-}
-
-.dot {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background-color: #e74c3c;
+    border: 0.2em solid yellow;
+    width: 1em;
+    height: 1em;
     border-radius: 50%;
-    cursor: pointer;
-}
-
-#top-left {
-    top: -5px;
-    left: -5px;
-}
-
-#top-right {
-    top: -5px;
-    right: -5px;
-}
-
-#bottom-left {
-    bottom: -5px;
-    left: -5px;
-}
-
-#bottom-right {
-    bottom: -5px;
-    right: -5px;
-}
+    cursor: grab;
+  }
+  
+  #theSVG{
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+  }

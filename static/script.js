@@ -1,53 +1,57 @@
 const rectangle = document.getElementById('rectangle');
 const dots = document.querySelectorAll('.dot');
+const container = document.querySelector('.container');
 
 let isDragging = false;
 let currentDot = null;
-let startX, startY, startWidth, startHeight;
+let offsetX, offsetY;
 
 dots.forEach(dot => {
-   dot.addEventListener('mousedown', (e) => {
-       isDragging = true;
-       currentDot = dot;
-       startX = e.clientX;
-       startY = e.clientY;
-       startWidth = parseFloat(getComputedStyle(rectangle).width);
-       startHeight = parseFloat(getComputedStyle(rectangle).height);
-       e.preventDefault();
-   });
+    dot.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        currentDot = dot;
+        offsetX = e.clientX - parseFloat(dot.style.left);
+        offsetY = e.clientY - parseFloat(dot.style.top);
+        e.preventDefault();// Prevents the default action of the event from being triggered
+    });
 });
 
 document.addEventListener('mousemove', (e) => {
-   if (!isDragging) return;
+    if (!isDragging) return;
 
-   const offsetX = e.clientX - startX;
-   const offsetY = e.clientY - startY;
+    const minX = 0;
+    const minY = 0;
+    const maxX = container.clientWidth - parseFloat(currentDot.style.width);
+    const maxY = container.clientHeight - parseFloat(currentDot.style.height);
 
-   switch (currentDot.id) {
-       case 'top-left':
-           rectangle.style.width = startWidth - offsetX + 'px';
-           rectangle.style.height = startHeight - offsetY + 'px';
-           rectangle.style.left = startX + offsetX + 'px';
-           rectangle.style.top = startY + offsetY + 'px';
-           break;
-       case 'top-right':
-           rectangle.style.width = startWidth + offsetX + 'px';
-           rectangle.style.height = startHeight - offsetY + 'px';
-           rectangle.style.top = startY + offsetY + 'px';
-           break;
-       case 'bottom-left':
-           rectangle.style.width = startWidth - offsetX + 'px';
-           rectangle.style.height = startHeight + offsetY + 'px';
-           rectangle.style.left = startX + offsetX + 'px';
-           break;
-       case 'bottom-right':
-           rectangle.style.width = startWidth + offsetX + 'px';
-           rectangle.style.height = startHeight + offsetY + 'px';
-           break;
-   }
+    let newX = e.clientX - offsetX;
+    let newY = e.clientY - offsetY;
+
+    // Ensure dot stays within the frame boundaries
+    newX = Math.min(maxX, Math.max(minX, newX));
+    newY = Math.min(maxY, Math.max(minY, newY));
+
+    currentDot.style.left = newX + 'px';
+    currentDot.style.top = newY + 'px';
+
+    switch (currentDot.id) {
+        case 'dot1':
+            rectangle.style.transform = `translate(${newX}px, ${newY}px)`;
+            break;
+        case 'dot2':
+            rectangle.style.width = e.clientX - parseFloat(rectangle.style.left) + 'px';
+            break;
+        case 'dot3':
+            rectangle.style.height = e.clientY - parseFloat(rectangle.style.top) + 'px';
+            break;
+        case 'dot4':
+            rectangle.style.width = e.clientX - parseFloat(rectangle.style.left) + 'px';
+            rectangle.style.height = e.clientY - parseFloat(rectangle.style.top) + 'px';
+            break;
+    }
 });
 
 document.addEventListener('mouseup', () => {
-   isDragging = false;
-   currentDot = null;
+    isDragging = false;
+    currentDot = null;
 });
