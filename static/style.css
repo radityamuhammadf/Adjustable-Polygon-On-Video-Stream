@@ -16,7 +16,7 @@ body {
     width: 1em;
     height: 1em;
     border-radius: 50%;
-    cursor: grab;
+    cursor: pointer;
   }
   
   #theSVG{
