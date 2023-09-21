@@ -1,6 +1,6 @@
 # importing the Computer Vision module
 import cv2
-from flask import Flask,Response,render_template,request
+from flask import Flask,Response,render_template,request,redirect
 import mysql.connector
 import numpy as np
 
@@ -120,7 +120,7 @@ def submitCoordinates():
     cursor.execute(update_coordinates_query)
     mydb.commit()
     settings_coordinates=getCoordinates()
-    hello_world()
+    return redirect('/')
 
 
 # ========== GETTER AND SETTER [COORDINATES] FUNCTION (END) ===========
