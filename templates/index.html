@@ -35,13 +35,33 @@
                   setTimeout(function () { // update polygon point from handle position
                     point.x = parseInt(handle.style.left) - base.left; //setting the x value of the point
                     point.y = parseInt(handle.style.top) - base.top; //setting the y value of the point
-                    //maybe here i can modify the points and send them to the server to be used by python model 
+                    
+                    // store updated coordinates into temporary variable
+                    updatedCoordinates=getPolygonCoordinates()
+                    console.log("Updated Coordinates: ", updatedCoordinates)
                   },0);
                 }
               });
             }(i));
           }
         }
+        function getPolygonCoordinates(){
+          var polygon=document.getElementById("x"); //get the specified polygon
+          return polygon.getAttribute("points"); //get the points attribute of the polygon
+        }
+        
+        //save data on "click" using event listener
+        // on click (saveButton) -> fill data using updatedCoordinates -> submit form (saveForm)
+        $("#saveButton").on("click",function(event){
+          event.preventDefault() //prevent the default action of the button
+          
+          if(updatedCoordinates!==null){
+            //set value in the hidden input field with updated coordinates
+            $("#coordinatesInput").val(updatedCoordinates)
+            //submit the form
+            $("#saveForm").submit()
+          }
+        })
     </script>
 </head><body>
     <div class="container">
@@ -52,7 +72,8 @@
         </svg>
     </div>
     <div>
-      <form action="/submit_coordinates" method="post">
+      <form id="saveForm" action="/submit_coordinates" method="post">
+        <input type="hidden" id="coordinatesInput" name="coordinates" value="">
         <button id="saveButton" type="submit">Save Coordinates</button>
       </form>
     </div>

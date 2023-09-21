@@ -1,6 +1,6 @@
 # importing the Computer Vision module
 import cv2
-from flask import Flask,Response,render_template
+from flask import Flask,Response,render_template,request
 import mysql.connector
 import numpy as np
 
@@ -67,7 +67,7 @@ cursor.execute(f"USE {database_name}")
 createTableIfNotExist(coordinates_db)
 # ========== DB CONNECTION (END) ===========
 
-# ========== GETTER FUNCTION (START) ===========
+# ========== GETTER AND SETTER [COORDINATES] FUNCTION (START) ===========
 poly_coordinates={ #default value for polygon coordinates
     "x1":0,
     "y1":0,
@@ -78,7 +78,8 @@ poly_coordinates={ #default value for polygon coordinates
     "x4":0,
     "y4":0
 }
-def getCoordinates():
+'''Getting Coordinate from The Database'''
+def getCoordinates(): 
     # query for getting the last row of coordinates
     get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2"
     cursor.execute(get_coordinates_query)
@@ -95,7 +96,33 @@ def getCoordinates():
     poly_coordinates['x4'] = result[8]
     poly_coordinates['y4'] = result[9]
     return poly_coordinates
-# ========== GETTER FUNCTION (END) ===========
+@app.route('/submit_coordinates',methods=['POST'])
+def submitCoordinates():
+    # get the hidden input form value from the html templates
+    
+    coordinates=request.form.get('coordinates')
+    print ("received coordinates -> ",coordinates)
+    # split the coordinates value into array
+    # coordinates=coordinates.split(',')
+    # assign the coordinates value to the global variable
+    # global variable will be used for the frame annotation
+    # poly_coordinates['x1'] = coordinates[0]
+    # poly_coordinates['y1'] = coordinates[1]
+    # poly_coordinates['x2'] = coordinates[2]
+    # poly_coordinates['y2'] = coordinates[3]
+    # poly_coordinates['x3'] = coordinates[4]
+    # poly_coordinates['y3'] = coordinates[5]
+    # poly_coordinates['x4'] = coordinates[6]
+    # poly_coordinates['y4'] = coordinates[7]
+    # # query for updating the coordinates value
+    # update_coordinates_query = f"UPDATE polygon_coordinates SET x1={coordinates[0]},y1={coordinates[1]},x2={coordinates[2]},y2={coordinates[3]},x3={coordinates[4]},y3={coordinates[5]},x4={coordinates[6]},y4={coordinates[7]} WHERE preference_num=2"
+    # cursor.execute(update_coordinates_query)
+    # mydb.commit()
+    settings_coordinates=getCoordinates()
+    return render_template('index.html',data=settings_coordinates)
+
+
+# ========== GETTER AND SETTER [COORDINATES] FUNCTION (END) ===========
 
 # ========== VIDEO STREAM (START) ===========
 cap = cv2.VideoCapture(0) #using webcam
@@ -122,13 +149,13 @@ def stream():
 
 def annotatedStream():
     # temporarily stored here
-    poly_zone=getCoordinates()
-    polygon_zone=np.array([[poly_zone['x1'],poly_zone['y1']],
-                           [poly_zone['x2'],poly_zone['y2']],
-                           [poly_zone['x3'],poly_zone['y3']],
-                           [poly_zone['x4'],poly_zone['y4']]],
-                           np.int32)    
     while True:
+        poly_zone=getCoordinates()
+        polygon_zone=np.array([[poly_zone['x1'],poly_zone['y1']],
+                            [poly_zone['x2'],poly_zone['y2']],
+                            [poly_zone['x3'],poly_zone['y3']],
+                            [poly_zone['x4'],poly_zone['y4']]],
+                            np.int32)    
         # reading frames from the video
         success, frame = cap.read()
 
