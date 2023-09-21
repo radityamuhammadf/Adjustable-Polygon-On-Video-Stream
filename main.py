@@ -39,7 +39,7 @@ def createTableIfNotExist(table_name):
             `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=3;
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     """
     cursor.execute(create_table_query)
 
@@ -67,11 +67,41 @@ cursor.execute(f"USE {database_name}")
 createTableIfNotExist(coordinates_db)
 # ========== DB CONNECTION (END) ===========
 
+# ========== GETTER FUNCTION (START) ===========
+poly_coordinates={ #default value for polygon coordinates
+    "x1":0,
+    "y1":0,
+    "x2":0,
+    "y2":0,
+    "x3":0,
+    "y3":0,
+    "x4":0,
+    "y4":0
+}
+def getCoordinates():
+    # query for getting the last row of coordinates
+    get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2"
+    cursor.execute(get_coordinates_query)
+    result = cursor.fetchone() 
+    #database contains id ; preference num ; x1 ; y1 ; x2 ; y2 ; x3 ; y3 ; x4 ; y4 ; createdAt ; updatedAt
+    #the result index > 0 ;       1        ;  2 ; 3  ; 4  ; 5  ; 6  ; 7  ; 8  ; 9  ;    10     ;    11 
+    #assigning the result to the global variable
+    poly_coordinates['x1'] = result[2]
+    poly_coordinates['y1'] = result[3]
+    poly_coordinates['x2'] = result[4]
+    poly_coordinates['y2'] = result[5]
+    poly_coordinates['x3'] = result[6]
+    poly_coordinates['y3'] = result[7]
+    poly_coordinates['x4'] = result[8]
+    poly_coordinates['y4'] = result[9]
+    return poly_coordinates
+# ========== GETTER FUNCTION (END) ===========
+
+# ========== VIDEO STREAM (START) ===========
 cap = cv2.VideoCapture(0) #using webcam
 # cap = cv2.VideoCapture('http://id.labkom.us:9357/') #using ip camera
 # cap = cv2.VideoCapture('People.mp4') #using video footage for testing
 def stream():
-
     # running infinite loop
     while True:
         # reading frames from the video
@@ -89,9 +119,15 @@ def stream():
             
 # ========== VIDEO STREAM (END) ===========
 # polygon zone preview
-polygon_zone=np.array([[200,300],[500,300],
-                        [500,100],[200,100]],np.int32)
+
 def annotatedStream():
+    # temporarily stored here
+    poly_zone=getCoordinates()
+    polygon_zone=np.array([[poly_zone['x1'],poly_zone['y1']],
+                           [poly_zone['x2'],poly_zone['y2']],
+                           [poly_zone['x3'],poly_zone['y3']],
+                           [poly_zone['x4'],poly_zone['y4']]],
+                           np.int32)    
     while True:
         # reading frames from the video
         success, frame = cap.read()
@@ -116,8 +152,9 @@ if __name__ == '__main__':
 
 @app.route('/')
 def hello_world():
+    settings_coordinates=getCoordinates()
     # will render the index.html file present in templates folder
-    return render_template('index.html')
+    return render_template('index.html',data=settings_coordinates)
 
 @app.route('/video_feed')
 def video_feed():
