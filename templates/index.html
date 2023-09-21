@@ -52,15 +52,17 @@
         
         //save data on "click" using event listener
         // on click (saveButton) -> fill data using updatedCoordinates -> submit form (saveForm)
-        $("#saveButton").on("click",function(event){
-          event.preventDefault() //prevent the default action of the button
-          
-          if(updatedCoordinates!==null){
-            //set value in the hidden input field with updated coordinates
-            $("#coordinatesInput").val(updatedCoordinates)
-            //submit the form
-            $("#saveForm").submit()
-          }
+        $(document).ready(function(){
+          $("#saveButton").on("click",function(event){
+            event.preventDefault() //prevent the default action of the button
+            console.log("On Click Value: ", updatedCoordinates)
+            if(updatedCoordinates!==null){
+              //set value in the hidden input field with updated coordinates
+              $("#coordinatesInput").val(updatedCoordinates)
+              //submit the form
+              $("#saveForm").submit()
+            }
+          })
         })
     </script>
 </head><body>

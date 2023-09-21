@@ -104,8 +104,8 @@ def submitCoordinates():
     print ("received coordinates -> ",coordinates)
     # split the coordinates value into array
     # coordinates=coordinates.split(',')
-    # assign the coordinates value to the global variable
-    # global variable will be used for the frame annotation
+    # # assign the coordinates value to the global variable
+    # # global variable will be used for the frame annotation
     # poly_coordinates['x1'] = coordinates[0]
     # poly_coordinates['y1'] = coordinates[1]
     # poly_coordinates['x2'] = coordinates[2]
