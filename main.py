@@ -103,23 +103,24 @@ def submitCoordinates():
     coordinates=request.form.get('coordinates')
     print ("received coordinates -> ",coordinates)
     # split the coordinates value into array
-    # coordinates=coordinates.split(',')
-    # # assign the coordinates value to the global variable
-    # # global variable will be used for the frame annotation
-    # poly_coordinates['x1'] = coordinates[0]
-    # poly_coordinates['y1'] = coordinates[1]
-    # poly_coordinates['x2'] = coordinates[2]
-    # poly_coordinates['y2'] = coordinates[3]
-    # poly_coordinates['x3'] = coordinates[4]
-    # poly_coordinates['y3'] = coordinates[5]
-    # poly_coordinates['x4'] = coordinates[6]
-    # poly_coordinates['y4'] = coordinates[7]
-    # # query for updating the coordinates value
-    # update_coordinates_query = f"UPDATE polygon_coordinates SET x1={coordinates[0]},y1={coordinates[1]},x2={coordinates[2]},y2={coordinates[3]},x3={coordinates[4]},y3={coordinates[5]},x4={coordinates[6]},y4={coordinates[7]} WHERE preference_num=2"
-    # cursor.execute(update_coordinates_query)
-    # mydb.commit()
+    coordinates=coordinates.split(' ')
+    # assign the coordinates value to the global variable
+    # global variable will be used for the frame annotation
+    poly_coordinates['x1'] = coordinates[0]
+    poly_coordinates['y1'] = coordinates[1]
+    poly_coordinates['x2'] = coordinates[2]
+    poly_coordinates['y2'] = coordinates[3]
+    poly_coordinates['x3'] = coordinates[4]
+    poly_coordinates['y3'] = coordinates[5]
+    poly_coordinates['x4'] = coordinates[6]
+    poly_coordinates['y4'] = coordinates[7]
+    # query for updating the coordinates value
+    update_coordinates_query = f"UPDATE polygon_coordinates SET x1={coordinates[0]},y1={coordinates[1]},x2={coordinates[2]},y2={coordinates[3]},x3={coordinates[4]},y3={coordinates[5]},x4={coordinates[6]},y4={coordinates[7]} WHERE preference_num=2"
+    # cursor.execute(update_coordinates_query,multi=True)
+    cursor.execute(update_coordinates_query)
+    mydb.commit()
     settings_coordinates=getCoordinates()
-    return render_template('index.html',data=settings_coordinates)
+    hello_world()
 
 
 # ========== GETTER AND SETTER [COORDINATES] FUNCTION (END) ===========
