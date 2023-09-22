@@ -84,6 +84,12 @@ def getCoordinates():
     get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2"
     cursor.execute(get_coordinates_query)
     result = cursor.fetchone() 
+    if not result:
+        insert_coordinates_query = f"INSERT INTO {coordinates_db} (preference_num,x1,y1,x2,y2,x3,y3,x4,y4) VALUES (2,200,300,500,300,500,100,200,100)"
+        cursor.execute(insert_coordinates_query)
+        get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2"
+        cursor.execute(get_coordinates_query)
+        result = cursor.fetchone() 
     #database contains id ; preference num ; x1 ; y1 ; x2 ; y2 ; x3 ; y3 ; x4 ; y4 ; createdAt ; updatedAt
     #the result index > 0 ;       1        ;  2 ; 3  ; 4  ; 5  ; 6  ; 7  ; 8  ; 9  ;    10     ;    11 
     #assigning the result to the global variable
