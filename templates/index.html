@@ -88,3 +88,59 @@
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
+
+<script type="text/javascript">
+  function draggablePolygon(polygon) {
+    var points = polygon.points;
+    var svgRoot = $(polygon).closest("svg"); //svg frame yang menampung poligon
+  
+    for (var i = 0; i < points.numberOfItems; i++) {
+      (function (i) {
+        var point = points.getItem(i);
+      
+        //bikin handler untuk menggeser titik poligon
+        var handle = document.createElement("div");
+        handle.className = "handle";
+        document.body.appendChild(handle);
+      
+        // mengatur posisi frame di halaman web, relatif dengan halaman web
+        var base = svgRoot.position(); //posisi koordinat horizontal dan vertikal diukur dari atas dan kiri halaman web
+        var cs = window.getComputedStyle(handle, null); //properti (panjang, lebar, ketebalan) handler
+        base.left -= (parseInt(cs.width) + parseInt(cs.borderLeftWidth) + parseInt(cs.borderRightWidth))/2; //posisi horizontal (jarak/margin) frame dari halaman web sebelah kiri, diperoleh dari setengah lebar handler
+        base.top -= (parseInt(cs.height) + parseInt(cs.borderTopWidth) + parseInt(cs.borderBottomWidth))/2; //posisi vertikal (jarak/margin) frame dari halaman web sebelah atas, diperoleh dari setengah tinggi handler
+      
+        // mengatur posisi handler agar sama dengan titik poligon
+        handle.style.left = base.left + point.x + "px"; // posisi horizontal handler sama dengan titik poligon, diperoleh dengan menambahkan margin kiri dengan x titik poligon (tidak relatif terhadap poligon, relatif terhadap halaman web)
+        handle.style.top = base.top + point.y + "px"; // posisi vertikal handler sama dengan titik poligon - - -
+      
+        $(handle).draggable({ 
+          drag: function (event) {
+            setTimeout(function () {
+              //mengatur titik poligon setelah handler digeser/dipindah
+              point.x = parseInt(handle.style.left) - base.left; // posisi horizontal titik poligon berubah, diperoleh dengan x handler dikurangi margin kiri frame
+              point.y = parseInt(handle.style.top) - base.top; // posisi vertikal - - -
+              
+              updatedCoordinates=getPolygonCoordinates()
+              console.log("Updated Coordinates: ", updatedCoordinates)
+            },0);
+          }
+        });
+      }(i));
+    }
+  }
+  function getPolygonCoordinates(){
+    var polygon=document.getElementById("x");
+    return polygon.getAttribute("points");
+  }
+  
+  $(document).ready(function(){
+    $("#saveButton").on("click",function(event){
+      event.preventDefault()
+      console.log("On Click Value: ", updatedCoordinates)
+      if(updatedCoordinates!==null){
+        $("#coordinatesInput").val(updatedCoordinates)
+        $("#saveForm").submit()
+      }
+    })
+  })
+</script>
