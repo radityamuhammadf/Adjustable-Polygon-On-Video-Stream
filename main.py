@@ -133,7 +133,7 @@ def submitCoordinates():
 
 # ========== VIDEO STREAM (START) ===========
 cap = cv2.VideoCapture(0) #using webcam
-# cap = cv2.VideoCapture('http://id.labkom.us:9357/') #using ip camera
+# cap = cv2.VideoCapture('rtsp://admin:admin@id.labkom.us:6643/Streaming/Channels/101') #using ip camera
 # cap = cv2.VideoCapture('People.mp4') #using video footage for testing
 def stream():
     # running infinite loop
