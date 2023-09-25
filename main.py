@@ -10,14 +10,14 @@ app=Flask(__name__,static_url_path='/static')
 
 # Will check if there's database named Enpemo exist on those server (server isn't it?)
 def checkDatabaseExistance(database_name):
-    check_db_query = f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{database_name}' " #sql query for checking if database named on 'database_name' variable is exist
+    check_db_query = f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{database_name}';" #sql query for checking if database named on 'database_name' variable is exist
     cursor.execute(check_db_query)
     result = cursor.fetchone()
     return result is not None
 
 # Create a database 
 def createDatabase(database_name):
-    create_database_query = f"CREATE DATABASE {database_name}"#sql query for creating database named on 'database_name' variable
+    create_database_query = f"CREATE DATABASE {database_name};"#sql query for creating database named on 'database_name' variable
     cursor.execute(create_database_query)
     print(f"The database '{database_name}' has been created.")
 
@@ -44,7 +44,7 @@ def createTableIfNotExist(table_name):
     cursor.execute(create_table_query)
 
 def checkTableExistence(table_name):
-    check_table_query = f"SHOW TABLES LIKE '{table_name}'" #sql query for searching table name
+    check_table_query = f"SHOW TABLES LIKE '{table_name}';" #sql query for searching table name
     cursor.execute(check_table_query) 
     result = cursor.fetchone() #fetch the search result -> 
     return result is not None #if the search result is not empty result, it'll returning not None value  
@@ -81,13 +81,13 @@ poly_coordinates={ #default value for polygon coordinates
 '''Getting Coordinate from The Database'''
 def getCoordinates(): 
     # query for getting the last row of coordinates
-    get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2"
+    get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2;"
     cursor.execute(get_coordinates_query)
     result = cursor.fetchone() 
     if not result:
-        insert_coordinates_query = f"INSERT INTO {coordinates_db} (preference_num,x1,y1,x2,y2,x3,y3,x4,y4) VALUES (2,200,300,500,300,500,100,200,100)"
+        insert_coordinates_query = f"INSERT INTO {coordinates_db} (preference_num,x1,y1,x2,y2,x3,y3,x4,y4) VALUES (2,200,300,500,300,500,100,200,100);"
         cursor.execute(insert_coordinates_query)
-        get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2"
+        get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2;"
         cursor.execute(get_coordinates_query)
         result = cursor.fetchone() 
     #database contains id ; preference num ; x1 ; y1 ; x2 ; y2 ; x3 ; y3 ; x4 ; y4 ; createdAt ; updatedAt
@@ -121,7 +121,7 @@ def submitCoordinates():
     poly_coordinates['x4'] = coordinates[6]
     poly_coordinates['y4'] = coordinates[7]
     # query for updating the coordinates value
-    update_coordinates_query = f"UPDATE polygon_coordinates SET x1={coordinates[0]},y1={coordinates[1]},x2={coordinates[2]},y2={coordinates[3]},x3={coordinates[4]},y3={coordinates[5]},x4={coordinates[6]},y4={coordinates[7]} WHERE preference_num=2"
+    update_coordinates_query = f"UPDATE polygon_coordinates SET x1={coordinates[0]},y1={coordinates[1]},x2={coordinates[2]},y2={coordinates[3]},x3={coordinates[4]},y3={coordinates[5]},x4={coordinates[6]},y4={coordinates[7]} WHERE preference_num=2;"
     # cursor.execute(update_coordinates_query,multi=True)
     cursor.execute(update_coordinates_query)
     mydb.commit()
