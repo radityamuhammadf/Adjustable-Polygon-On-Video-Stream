@@ -56,7 +56,7 @@ mydb = mysql.connector.connect(
     password=''
 )
 # Instantiate cursor class for executing SQL commands
-cursor = mydb.cursor()
+cursor = mydb.cursor(buffered=True)
 database_name = "enpemo"
 coordinates_db = "polygon_coordinates"
 # Global Logic -- Checking database existence then creating a database if there's no database found in the server
@@ -68,22 +68,15 @@ createTableIfNotExist(coordinates_db)
 # ========== DB CONNECTION (END) ===========
 
 # ========== GETTER AND SETTER [COORDINATES] FUNCTION (START) ===========
-poly_coordinates={ #default value for polygon coordinates
-    "x1":0,
-    "y1":0,
-    "x2":0,
-    "y2":0,
-    "x3":0,
-    "y3":0,
-    "x4":0,
-    "y4":0
-}
+
 '''Getting Coordinate from The Database'''
-def getCoordinates(): 
+def getCoordinates():
+    poly_coordinates={} #default value for polygon coordinates 
     # query for getting the last row of coordinates
     get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2;"
     cursor.execute(get_coordinates_query)
-    result = cursor.fetchone() 
+    result = cursor.fetchone()
+    # if there's no row found in the database, it'll insert the default value 
     if not result:
         insert_coordinates_query = f"INSERT INTO {coordinates_db} (preference_num,x1,y1,x2,y2,x3,y3,x4,y4) VALUES (2,200,300,500,300,500,100,200,100);"
         cursor.execute(insert_coordinates_query)
@@ -91,7 +84,8 @@ def getCoordinates():
         cursor.execute(get_coordinates_query)
         result = cursor.fetchone() 
     #database contains id ; preference num ; x1 ; y1 ; x2 ; y2 ; x3 ; y3 ; x4 ; y4 ; createdAt ; updatedAt
-    #the result index > 0 ;       1        ;  2 ; 3  ; 4  ; 5  ; 6  ; 7  ; 8  ; 9  ;    10     ;    11 
+    #  the result 
+    #  index would be   0 ;       1        ;  2 ; 3  ; 4  ; 5  ; 6  ; 7  ; 8  ; 9  ;    10     ;    11 
     #assigning the result to the global variable
     poly_coordinates['x1'] = result[2]
     poly_coordinates['y1'] = result[3]
@@ -102,6 +96,7 @@ def getCoordinates():
     poly_coordinates['x4'] = result[8]
     poly_coordinates['y4'] = result[9]
     return poly_coordinates
+
 @app.route('/submit_coordinates',methods=['POST'])
 def submitCoordinates():
     # get the hidden input form value from the html templates
@@ -110,22 +105,11 @@ def submitCoordinates():
     print ("received coordinates -> ",coordinates)
     # split the coordinates value into array
     coordinates=coordinates.split(' ')
-    # assign the coordinates value to the global variable
-    # global variable will be used for the frame annotation
-    poly_coordinates['x1'] = coordinates[0]
-    poly_coordinates['y1'] = coordinates[1]
-    poly_coordinates['x2'] = coordinates[2]
-    poly_coordinates['y2'] = coordinates[3]
-    poly_coordinates['x3'] = coordinates[4]
-    poly_coordinates['y3'] = coordinates[5]
-    poly_coordinates['x4'] = coordinates[6]
-    poly_coordinates['y4'] = coordinates[7]
     # query for updating the coordinates value
     update_coordinates_query = f"UPDATE polygon_coordinates SET x1={coordinates[0]},y1={coordinates[1]},x2={coordinates[2]},y2={coordinates[3]},x3={coordinates[4]},y3={coordinates[5]},x4={coordinates[6]},y4={coordinates[7]} WHERE preference_num=2;"
     # cursor.execute(update_coordinates_query,multi=True)
     cursor.execute(update_coordinates_query)
     mydb.commit()
-    settings_coordinates=getCoordinates()
     return redirect('/')
 
 
