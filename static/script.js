@@ -55,3 +55,22 @@ document.addEventListener('mouseup', () => {
     isDragging = false;
     currentDot = null;
 });
+
+// window.addEventListener('beforeunload',function(e){
+//     e.preventDefault()
+//     e.returnValue=''
+
+//     // creating AJAX request to call Python Destroy Function
+//     //using XMLHttpRequest
+//     var xhr=new XMLHttpRequest()
+//     xhr.open('POST','/destroy',true)
+//     xhr.onreadystatechange=function(){
+//         if(xhr.readyState===XMLHttpRequest.DONE){
+//             if(xhr.status===200){
+//                 console.log('destroyed')
+//             }
+//         } else{
+//             console.error('error occured: ',xhr.statusText)
+//         }
+//     }
+// })
