@@ -73,28 +73,30 @@ createTableIfNotExist(coordinates_db)
 def getCoordinates():
     poly_coordinates={} #default value for polygon coordinates 
     # query for getting the last row of coordinates
-    get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2;"
-    cursor.execute(get_coordinates_query)
-    result = cursor.fetchone()
-    # if there's no row found in the database, it'll insert the default value 
-    if not result:
-        insert_coordinates_query = f"INSERT INTO {coordinates_db} (preference_num,x1,y1,x2,y2,x3,y3,x4,y4) VALUES (2,200,300,500,300,500,100,200,100);"
-        cursor.execute(insert_coordinates_query)
+    try:
+        # get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2 LIMIT 0,1;"
         get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2;"
         cursor.execute(get_coordinates_query)
-        result = cursor.fetchone() 
-    #database contains id ; preference num ; x1 ; y1 ; x2 ; y2 ; x3 ; y3 ; x4 ; y4 ; createdAt ; updatedAt
-    #  the result 
-    #  index would be   0 ;       1        ;  2 ; 3  ; 4  ; 5  ; 6  ; 7  ; 8  ; 9  ;    10     ;    11 
-    #assigning the result to the global variable
-    poly_coordinates['x1'] = result[2]
-    poly_coordinates['y1'] = result[3]
-    poly_coordinates['x2'] = result[4]
-    poly_coordinates['y2'] = result[5]
-    poly_coordinates['x3'] = result[6]
-    poly_coordinates['y3'] = result[7]
-    poly_coordinates['x4'] = result[8]
-    poly_coordinates['y4'] = result[9]
+        result = cursor.fetchone()
+        if result:
+            #assigning the result to the global variable
+            poly_coordinates['x1'] = result[2]
+            poly_coordinates['y1'] = result[3]
+            poly_coordinates['x2'] = result[4]
+            poly_coordinates['y2'] = result[5]
+            poly_coordinates['x3'] = result[6]
+            poly_coordinates['y3'] = result[7]
+            poly_coordinates['x4'] = result[8]
+            poly_coordinates['y4'] = result[9]
+        else:
+            insert_coordinates_query = f"INSERT INTO {coordinates_db} (preference_num,x1,y1,x2,y2,x3,y3,x4,y4) VALUES (2,200,300,500,300,500,100,200,100);"
+            cursor.execute(insert_coordinates_query)
+            get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2;"
+            cursor.execute(get_coordinates_query)
+            result = cursor.fetchone() 
+    except mysql.connector.Error as err:
+        print(f"Database Error: {err}")
+
     return poly_coordinates
 
 @app.route('/submit_coordinates',methods=['POST'])
@@ -161,7 +163,7 @@ def annotatedStream():
             frame=buffer.tobytes()# converting the image to bytes
             yield(b'--frame\r\n' # yielding the frame for display
                   b'Content-Type: image/jpeg\r\n\r\n'+frame+b'\r\n')
-
+    
 
 
 if __name__ == '__main__':
