@@ -3,8 +3,10 @@ import cv2
 from flask import Flask,Response,render_template,request,redirect
 import mysql.connector
 import numpy as np
+from flask_socketio import SocketIO, emit
 
-app=Flask(__name__,static_url_path='/static')
+app=Flask(__name__,static_url_path='/static') #initializing the flask app with the name 'app' and static_url_path for static files
+socketio=SocketIO(app) #socketio initialization for real-time communication
 
 # ========== DB CONNECTION (START) ===========
 
@@ -172,7 +174,7 @@ if __name__ == '__main__':
     app.run(debug=True)
 
 @app.route('/')
-def hello_world():
+def landing_page():
     settings_coordinates=getCoordinates()
     # will render the index.html file present in templates folder
     return render_template('index.html',data=settings_coordinates)
@@ -180,3 +182,10 @@ def hello_world():
 @app.route('/video_feed')
 def video_feed():
     return Response(annotatedStream(),mimetype='multipart/x-mixed-replace; boundary=frame')
+# # socketio for listening disconnected client
+# @socketio.on('disconnect')
+# def destroy():
+#     cap.release()
+#     cv2.destroyAllWindows()
+#     cursor.close()
+#     mydb.close()
