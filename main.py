@@ -27,7 +27,7 @@ def createTableIfNotExist(table_name):
     create_table_query = f"""
         CREATE TABLE IF NOT EXISTS `{table_name}` (
             `id` INT NOT NULL AUTO_INCREMENT,
-            `preference_num` INT NOT NULL,
+            `preference_num` INT NOT NULL UNIQUE,
             `x1` INT NOT NULL,
             `y1` INT NOT NULL,
             `x2` INT NOT NULL,
@@ -66,16 +66,17 @@ if not checkDatabaseExistance(database_name):
 cursor.execute(f"USE {database_name}")
 createTableIfNotExist(coordinates_db)
 # ========== DB CONNECTION (END) ===========
+# 0
+
 
 # ========== GETTER AND SETTER [COORDINATES] FUNCTION (START) ===========
-
 '''Getting Coordinate from The Database'''
 def getCoordinates():
     poly_coordinates={} #default value for polygon coordinates 
     # query for getting the last row of coordinates
     try:
         # get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2 LIMIT 0,1;"
-        get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2;"
+        get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE id=3;"
         cursor.execute(get_coordinates_query)
         result = cursor.fetchone()
         if result:
@@ -91,7 +92,7 @@ def getCoordinates():
         else:
             insert_coordinates_query = f"INSERT INTO {coordinates_db} (preference_num,x1,y1,x2,y2,x3,y3,x4,y4) VALUES (2,200,300,500,300,500,100,200,100);"
             cursor.execute(insert_coordinates_query)
-            get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2;"
+            get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE id=3;"
             cursor.execute(get_coordinates_query)
             result = cursor.fetchone() 
     except mysql.connector.Error as err:
@@ -108,7 +109,7 @@ def submitCoordinates():
     # split the coordinates value into array
     coordinates=coordinates.split(' ')
     # query for updating the coordinates value
-    update_coordinates_query = f"UPDATE polygon_coordinates SET x1={coordinates[0]},y1={coordinates[1]},x2={coordinates[2]},y2={coordinates[3]},x3={coordinates[4]},y3={coordinates[5]},x4={coordinates[6]},y4={coordinates[7]} WHERE preference_num=2;"
+    update_coordinates_query = f"UPDATE polygon_coordinates SET x1={coordinates[0]},y1={coordinates[1]},x2={coordinates[2]},y2={coordinates[3]},x3={coordinates[4]},y3={coordinates[5]},x4={coordinates[6]},y4={coordinates[7]} WHERE id=3;"
     # cursor.execute(update_coordinates_query,multi=True)
     cursor.execute(update_coordinates_query)
     mydb.commit()
