@@ -143,13 +143,13 @@ def stream():
 
 def annotatedStream():
     # temporarily stored here
+    poly_zone=getCoordinates()
+    polygon_zone=np.array([[poly_zone['x1'],poly_zone['y1']],
+                        [poly_zone['x2'],poly_zone['y2']],
+                        [poly_zone['x3'],poly_zone['y3']],
+                        [poly_zone['x4'],poly_zone['y4']]],
+                        np.int32)    
     while True:
-        poly_zone=getCoordinates()
-        polygon_zone=np.array([[poly_zone['x1'],poly_zone['y1']],
-                            [poly_zone['x2'],poly_zone['y2']],
-                            [poly_zone['x3'],poly_zone['y3']],
-                            [poly_zone['x4'],poly_zone['y4']]],
-                            np.int32)    
         # reading frames from the video
         success, frame = cap.read()
 
