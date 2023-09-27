@@ -5,7 +5,7 @@ body {
 .container {
     width: 640px;
     height: 480px;
-    color: beige;
+    background-color: brown;
     position: relative;
 }
 
@@ -13,8 +13,8 @@ body {
 .handle {
     position: absolute;
     border: 0.2em solid yellow;
-    width: 1em;
-    height: 1em;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     cursor: pointer;
   }
