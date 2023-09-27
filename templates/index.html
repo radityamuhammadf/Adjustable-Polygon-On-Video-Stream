@@ -9,42 +9,45 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js"></script>
   
     <script type="text/javascript">
-        function draggablePolygon(polygon) {
-          var points = polygon.points;
-          var svgRoot = $(polygon).closest("svg");
-        
-          for (var i = 0; i < points.numberOfItems; i++) {
-            (function (i) { // close over variables for drag call back
-              var point = points.getItem(i);
-            
-              var handle = document.createElement("div"); //creating div element for creating the edge points 
-              handle.className = "handle";//setting the class name for the created div element
-              document.body.appendChild(handle);//appending the created div element to the body of the html page
-            
-              var base = svgRoot.position();//getting the position of the svg element
-              // center handles over polygon
-              var cs = window.getComputedStyle(handle, null);
-              base.left -= (parseInt(cs.width) + parseInt(cs.borderLeftWidth) + parseInt(cs.borderRightWidth))/2; //getting the width of the handle and setting the left position
-              base.top -= (parseInt(cs.height) + parseInt(cs.borderTopWidth) + parseInt(cs.borderBottomWidth))/2; //getting the height of the handle and setting the top position
-            
-              handle.style.left = base.left + point.x + "px";//setting the left position of the handle using the base.left and point.x values 
-              handle.style.top = base.top + point.y + "px";//setting the top position of the handle using the base.top and point.y values
-            
-              $(handle).draggable({ 
-                drag: function (event) { // handle drag events
-                  setTimeout(function () { // update polygon point from handle position
-                    point.x = parseInt(handle.style.left) - base.left; //setting the x value of the point
-                    point.y = parseInt(handle.style.top) - base.top; //setting the y value of the point
-                    
-                    // store updated coordinates into temporary variable
-                    updatedCoordinates=getPolygonCoordinates()
-                    console.log("Updated Coordinates: ", updatedCoordinates)
-                  },0);
-                }
-              });
-            }(i));
-          }
+      function draggablePolygon(polygon) {
+        var points = polygon.points;
+        var svgRoot = $(polygon).closest("svg");
+        var container = document.querySelector(".container");
+        //console.log(svgRoot)
+      
+        for (var i = 0; i < points.numberOfItems; i++) {
+          (function (i) {
+            var point = points.getItem(i);
+      
+            var handle = document.createElement("div");
+            handle.className = "handle";
+            container.appendChild(handle); // Menambahkan handle sebagai anak elemen SVG
+      
+            var base = svgRoot.position(); //posisi koordinat horizontal dan vertikal diukur dari atas dan kiri halaman web
+            var cs = window.getComputedStyle(handle, null); //properti (panjang, lebar, ketebalan) handler
+            base.left = (parseInt(cs.width) + parseInt(cs.borderLeftWidth) + parseInt(cs.borderRightWidth))/2; //posisi horizontal (jarak/margin) frame dari halaman web sebelah kiri, diperoleh dari setengah lebar handler
+            base.top = (parseInt(cs.height) + parseInt(cs.borderTopWidth) + parseInt(cs.borderBottomWidth))/2; //posisi vertikal (jarak/margin) frame dari halaman web sebelah atas, diperoleh dari setengah tinggi handler
+          
+            // mengatur posisi handler agar sama dengan titik poligon
+            handle.style.left = (point.x - base.left) + "px"; // posisi horizontal handler sama dengan titik poligon, diperoleh dengan menambahkan margin kiri dengan x titik poligon (tidak relatif terhadap poligon, relatif terhadap halaman web)
+            handle.style.top = (point.y - base.top) + "px"; // posisi vertikal handler sama dengan titik poligon - - -
+      
+            $(handle).draggable({
+              containment: container, // Batasi pergerakan handler ke dalam elemen SVG
+              drag: function (event) {
+                setTimeout(function () {
+                  point.x = parseInt(handle.style.left) + base.left; // posisi horizontal titik poligon berubah, diperoleh dengan x handler dikurangi margin kiri frame
+                  point.y = parseInt(handle.style.top) + base.top; // posisi vertikal - - -
+      
+                  updatedCoordinates = getPolygonCoordinates();
+                  console.log("Updated Coordinates: ", updatedCoordinates);
+                }, 0);
+              }
+            });
+          })(i);
         }
+      }
+      
         function getPolygonCoordinates(){
           var polygon=document.getElementById("x"); //get the specified polygon
           return polygon.getAttribute("points"); //get the points attribute of the polygon
@@ -67,9 +70,8 @@
     </script>
 </head><body>
     <div class="container">
-        <img src="{{ url_for('video_feed') }}" width="100%">
+        <!-- <img src="{{ url_for('video_feed') }}" width="100%"> -->
         <svg id="theSVG" width="640" height="480" style="border: 2px inset #8c6868;">
-            <!-- Instatiate The Polygon -->
             <polygon id="x" points="{{data['x1']}},{{data['y1']}} {{data['x2']}},{{data['y2']}} {{data['x3']}},{{data['y3']}} {{data['x4']}},{{data['y4']}}" style="opacity: 50%;"/>
         </svg>
     </div>
