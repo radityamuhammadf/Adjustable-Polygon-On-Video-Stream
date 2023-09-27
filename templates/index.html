@@ -70,7 +70,7 @@
     </script>
 </head><body>
     <div class="container">
-        <!-- <img src="{{ url_for('video_feed') }}" width="100%"> -->
+        <img src="{{ url_for('video_feed') }}" width="100%">
         <svg id="theSVG" width="640" height="480" style="border: 2px inset #8c6868;">
             <polygon id="x" points="{{data['x1']}},{{data['y1']}} {{data['x2']}},{{data['y2']}} {{data['x3']}},{{data['y3']}} {{data['x4']}},{{data['y4']}}" style="opacity: 50%;"/>
         </svg>
