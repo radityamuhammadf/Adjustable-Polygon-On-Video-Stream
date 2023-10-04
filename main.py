@@ -5,70 +5,52 @@ import mysql.connector
 import numpy as np
 from flask_socketio import SocketIO, emit
 
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy_utils import create_database, database_exists
+from sqlalchemy.sql import func #import sqlalchemy functions
+from sqlalchemy import update,create_engine,select #import sqlalchemy update function and create_engine function
+from sqlalchemy.orm import sessionmaker #import sqlalchemy session maker function
+
 app=Flask(__name__,static_url_path='/static') #initializing the flask app with the name 'app' and static_url_path for static files
 socketio=SocketIO(app) #socketio initialization for real-time communication
 
-# ========== DB CONNECTION (START) ===========
+# ========== DB CONNECTION -- SQLALCHEMY (START) ===========
+#Database Configuration with MySQL
+#     -->     db type | username: password | path to database name    
+engine_url='mysql+pymysql://root:''@localhost/enpemo'
+if not database_exists(engine_url):
+    create_database(engine_url)
+app.config['SQLALCHEMY_DATABASE_URI']=engine_url
+engine=create_engine(engine_url)
+Session=sessionmaker(engine)
+db=SQLAlchemy(app) #initializing the database with the name 'db'
+class PolygonCoordinates(db.Model):
+    id=db.Column(db.Integer,primary_key=True,autoincrement=True)
+    preference_num=db.Column(db.Integer,nullable=False)
+    x1=db.Column(db.Integer,nullable=False)
+    y1=db.Column(db.Integer,nullable=False)
+    x2=db.Column(db.Integer,nullable=False)
+    y2=db.Column(db.Integer,nullable=False)
+    x3=db.Column(db.Integer,nullable=False)
+    y3=db.Column(db.Integer,nullable=False)
+    x4=db.Column(db.Integer,nullable=False)
+    y4=db.Column(db.Integer,nullable=False)
+    createdAt=db.Column(db.DateTime,nullable=False)
+    updatedAt=db.Column(db.DateTime,nullable=False)
 
-# Will check if there's database named Enpemo exist on those server (server isn't it?)
-def checkDatabaseExistance(database_name):
-    check_db_query = f"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{database_name}';" #sql query for checking if database named on 'database_name' variable is exist
-    cursor.execute(check_db_query)
-    result = cursor.fetchone()
-    return result is not None
-
-# Create a database 
-def createDatabase(database_name):
-    create_database_query = f"CREATE DATABASE {database_name};"#sql query for creating database named on 'database_name' variable
-    cursor.execute(create_database_query)
-    print(f"The database '{database_name}' has been created.")
-
-# Function to execute the SQL Query which will be creating a new table if there's no table  
-def createTableIfNotExist(table_name):
-    # query for automatically checking and creating a table
-    create_table_query = f"""
-        CREATE TABLE IF NOT EXISTS `{table_name}` (
-            `id` INT NOT NULL AUTO_INCREMENT,
-            `preference_num` INT NOT NULL UNIQUE,
-            `x1` INT NOT NULL,
-            `y1` INT NOT NULL,
-            `x2` INT NOT NULL,
-            `y2` INT NOT NULL,
-            `x3` INT NOT NULL,
-            `y3` INT NOT NULL,
-            `x4` INT NOT NULL,
-            `y4` INT NOT NULL,
-            `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    """
-    cursor.execute(create_table_query)
-
-def checkTableExistence(table_name):
-    check_table_query = f"SHOW TABLES LIKE '{table_name}';" #sql query for searching table name
-    cursor.execute(check_table_query) 
-    result = cursor.fetchone() #fetch the search result -> 
-    return result is not None #if the search result is not empty result, it'll returning not None value  
-
-# Initiate connection to MySQL server
-mydb = mysql.connector.connect(
-    host='localhost',
-    user='root',
-    password=''
-)
-# Instantiate cursor class for executing SQL commands
-cursor = mydb.cursor(buffered=True)
-database_name = "enpemo"
-coordinates_db = "polygon_coordinates"
-# Global Logic -- Checking database existence then creating a database if there's no database found in the server
-if not checkDatabaseExistance(database_name):
-    createDatabase(database_name)
-# Select the 'enpemo' database
-cursor.execute(f"USE {database_name}")
-createTableIfNotExist(coordinates_db)
-# ========== DB CONNECTION (END) ===========
-# 0
+    def __init__(self,preference_num,x1,y1,x2,y2,x3,y3,x4,y4,createdAt,updatedAt):
+        self.preference_num=preference_num
+        self.x1=x1
+        self.y1=y1
+        self.x2=x2
+        self.y2=y2
+        self.x3=x3
+        self.y3=y3
+        self.x4=x4
+        self.y4=y4
+        self.createdAt=createdAt
+        self.updatedAt=updatedAt
+# ========== DB CONNECTION -- SQLALCHEMY (END) ===========
 
 
 # ========== GETTER AND SETTER [COORDINATES] FUNCTION (START) ===========
@@ -76,45 +58,43 @@ createTableIfNotExist(coordinates_db)
 def getCoordinates():
     poly_coordinates={} #default value for polygon coordinates 
     # query for getting the last row of coordinates
-    try:
-        # get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE preference_num = 2 LIMIT 0,1;"
-        get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE id=1;"
-        cursor.execute(get_coordinates_query)
-        result = cursor.fetchone()
-        if result:
-            #assigning the result to the global variable
-            poly_coordinates['x1'] = result[2]
-            poly_coordinates['y1'] = result[3]
-            poly_coordinates['x2'] = result[4]
-            poly_coordinates['y2'] = result[5]
-            poly_coordinates['x3'] = result[6]
-            poly_coordinates['y3'] = result[7]
-            poly_coordinates['x4'] = result[8]
-            poly_coordinates['y4'] = result[9]
-        else:
-            insert_coordinates_query = f"INSERT INTO {coordinates_db} (preference_num,x1,y1,x2,y2,x3,y3,x4,y4) VALUES (2,200,300,500,300,500,100,200,100);"
-            cursor.execute(insert_coordinates_query)
-            get_coordinates_query = f"SELECT * FROM {coordinates_db} WHERE id=1;"
-            cursor.execute(get_coordinates_query)
-            result = cursor.fetchone() 
-    except mysql.connector.Error as err:
-        print(f"Database Error: {err}")
-
+    # Using ORM Approach
+    with Session() as session:
+        result=session.query(PolygonCoordinates).filter_by(id=1).first()
+    if result:
+        #assigning the result to the global variable
+        poly_coordinates['x1'] = result.x1
+        poly_coordinates['y1'] = result.y1
+        poly_coordinates['x2'] = result.x2
+        poly_coordinates['y2'] = result.y2
+        poly_coordinates['x3'] = result.x3
+        poly_coordinates['y3'] = result.y3
+        poly_coordinates['x4'] = result.x4
+        poly_coordinates['y4'] = result.y4
+    else:
+        newPolyCoordinates = PolygonCoordinates(1,200,300,500,300,500,100,200,100,func.now(),func.now())
+        db.session.add(newPolyCoordinates)
+        print("No data found, inserting default data...")
     return poly_coordinates
+
 
 @app.route('/submit_coordinates',methods=['POST'])
 def submitCoordinates():
     # get the hidden input form value from the html templates
-    
     coordinates=request.form.get('coordinates')
-    print ("received coordinates -> ",coordinates)
     # split the coordinates value into array
     coordinates=coordinates.split(' ')
+    print ("received coordinates -> ",coordinates)
     # query for updating the coordinates value
-    update_coordinates_query = f"UPDATE polygon_coordinates SET x1={coordinates[0]},y1={coordinates[1]},x2={coordinates[2]},y2={coordinates[3]},x3={coordinates[4]},y3={coordinates[5]},x4={coordinates[6]},y4={coordinates[7]} WHERE id=1;"
-    # cursor.execute(update_coordinates_query,multi=True)
-    cursor.execute(update_coordinates_query)
-    mydb.commit()
+    # ORM Approach for Update Coordinate
+    updated_coordinates=(update(PolygonCoordinates)
+                            .where(PolygonCoordinates.id==1)
+                            .values(x1=coordinates[0],y1=coordinates[1],x2=coordinates[2],y2=coordinates[3],x3=coordinates[4],y3=coordinates[5],x4=coordinates[6],y4=coordinates[7]))
+    # ORM Approach for Update Coordinate
+    with Session() as session:
+        session.execute(updated_coordinates)
+        session.commit()
+  
     return redirect('/')
 
 
@@ -122,27 +102,9 @@ def submitCoordinates():
 
 # ========== VIDEO STREAM (START) ===========
 cap = cv2.VideoCapture(0) #using webcam
-# cap = cv2.VideoCapture('rtsp://admin:admin@id.labkom.us:6643/Streaming/Channels/101') #using ip camera
-# cap = cv2.VideoCapture('People.mp4') #using video footage for testing
-def stream():
-    # running infinite loop
-    while True:
-        # reading frames from the video
-        success, frame = cap.read()
+# cap = cv2.VideoCapture('rtsp://admin:admin123@192.168.22.176:554/Streaming/Channels/202') #using ip camera
 
-        if not success:
-            break
-        else:
-            # converting the collected frame to image
-            ret,buffer=cv2.imencode('.jpg',frame)
-            frame=cv2.resize(frame,(640,480))
-            frame=buffer.tobytes()# converting the image to bytes
-            yield(b'--frame\r\n' # yielding the frame for display
-                  b'Content-Type: image/jpeg\r\n\r\n'+frame+b'\r\n')
-            
-# ========== VIDEO STREAM (END) ===========
 # polygon zone preview
-
 def annotatedStream():
     # temporarily stored here
     poly_zone=getCoordinates()
@@ -170,7 +132,6 @@ def annotatedStream():
 
 
 if __name__ == '__main__':
-    stream()
     app.run(debug=True)
 
 @app.route('/')
