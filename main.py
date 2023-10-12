@@ -57,24 +57,25 @@ class PolygonCoordinates(db.Model):
 '''Getting Coordinate from The Database'''
 def getCoordinates():
     poly_coordinates={} #default value for polygon coordinates 
-    # query for getting the last row of coordinates
-    # Using ORM Approach
-    with Session() as session:
-        result=session.query(PolygonCoordinates).filter_by(id=1).first()
-    if result:
-        #assigning the result to the global variable
-        poly_coordinates['x1'] = result.x1
-        poly_coordinates['y1'] = result.y1
-        poly_coordinates['x2'] = result.x2
-        poly_coordinates['y2'] = result.y2
-        poly_coordinates['x3'] = result.x3
-        poly_coordinates['y3'] = result.y3
-        poly_coordinates['x4'] = result.x4
-        poly_coordinates['y4'] = result.y4
-    else:
-        newPolyCoordinates = PolygonCoordinates(1,200,300,500,300,500,100,200,100,func.now(),func.now())
-        db.session.add(newPolyCoordinates)
-        print("No data found, inserting default data...")
+    with app.app_context(): # create a context for the database access
+        # query for getting the last row of coordinates
+        # Using ORM Approach
+        result=PolygonCoordinates.query.filter_by(id=1).first()
+        if result:
+            #assigning the result to the global variable
+            poly_coordinates['x1'] = result.x1
+            poly_coordinates['y1'] = result.y1
+            poly_coordinates['x2'] = result.x2
+            poly_coordinates['y2'] = result.y2
+            poly_coordinates['x3'] = result.x3
+            poly_coordinates['y3'] = result.y3
+            poly_coordinates['x4'] = result.x4
+            poly_coordinates['y4'] = result.y4
+        else:
+            newPolyCoordinates = PolygonCoordinates(1,200,300,500,300,500,100,200,100,func.now(),func.now())
+            db.session.add(newPolyCoordinates)
+            db.session.commit()
+            print("No data found, inserting default data...")
     return poly_coordinates
 
 
@@ -87,13 +88,19 @@ def submitCoordinates():
     print ("received coordinates -> ",coordinates)
     # query for updating the coordinates value
     # ORM Approach for Update Coordinate
-    updated_coordinates=(update(PolygonCoordinates)
-                            .where(PolygonCoordinates.id==1)
-                            .values(x1=coordinates[0],y1=coordinates[1],x2=coordinates[2],y2=coordinates[3],x3=coordinates[4],y3=coordinates[5],x4=coordinates[6],y4=coordinates[7]))
-    # ORM Approach for Update Coordinate
-    with Session() as session:
-        session.execute(updated_coordinates)
-        session.commit()
+    updated_coordinates = {
+        'x1': coordinates[0],
+        'y1': coordinates[1],
+        'x2': coordinates[2],
+        'y2': coordinates[3],
+        'x3': coordinates[4],
+        'y3': coordinates[5],
+        'x4': coordinates[6],
+        'y4': coordinates[7]
+    }
+    with app.app_context(): # create a context for the database access
+        PolygonCoordinates.query.filter_by(id=1).update(updated_coordinates)
+        db.session.commit()
   
     return redirect('/')
 
@@ -101,7 +108,8 @@ def submitCoordinates():
 # ========== GETTER AND SETTER [COORDINATES] FUNCTION (END) ===========
 
 # ========== VIDEO STREAM (START) ===========
-cap = cv2.VideoCapture(0) #using webcam
+cap = cv2.VideoCapture("rtsp://admin:admin123@id.labkom.us:3693/Streaming/Channels/301") #indoor office cctv
+# cap = cv2.VideoCapture(0) #using webcam
 # cap = cv2.VideoCapture('rtsp://admin:admin123@192.168.22.176:554/Streaming/Channels/202') #using ip camera
 
 # polygon zone preview
@@ -124,15 +132,12 @@ def annotatedStream():
             frame=cv2.resize(frame,(640,480))
             # annotate the frame using polygon
             frame=cv2.polylines(frame,[np.array(polygon_zone,np.int32)],True,(0,0,255),4,cv2.LINE_AA)
-            ret,buffer=cv2.imencode('.jpg',frame)
+            buffer=cv2.imencode('.jpg',frame)[1] # change to index 1 to get the buffer
             frame=buffer.tobytes()# converting the image to bytes
             yield(b'--frame\r\n' # yielding the frame for display
                   b'Content-Type: image/jpeg\r\n\r\n'+frame+b'\r\n')
     
 
-
-if __name__ == '__main__':
-    app.run(debug=True)
 
 @app.route('/')
 def landing_page():
@@ -150,3 +155,5 @@ def video_feed():
 #     cv2.destroyAllWindows()
 #     cursor.close()
 #     mydb.close()
+if __name__ == '__main__':
+    app.run(debug=True)
