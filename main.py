@@ -83,20 +83,21 @@ def getCoordinates():
 def submitCoordinates():
     # get the hidden input form value from the html templates
     coordinates=request.form.get('coordinates')
+    print(coordinates)
     # split the coordinates value into array
     coordinates=coordinates.split(' ')
     print ("received coordinates -> ",coordinates)
     # query for updating the coordinates value
     # ORM Approach for Update Coordinate
     updated_coordinates = {
-        'x1': coordinates[0],
-        'y1': coordinates[1],
-        'x2': coordinates[2],
-        'y2': coordinates[3],
-        'x3': coordinates[4],
-        'y3': coordinates[5],
-        'x4': coordinates[6],
-        'y4': coordinates[7]
+        'x1': coordinates[0].split(',')[0],
+        'y1': coordinates[0].split(',')[1],
+        'x2': coordinates[1].split(',')[0],
+        'y2': coordinates[1].split(',')[1],
+        'x3': coordinates[2].split(',')[0],
+        'y3': coordinates[2].split(',')[1],
+        'x4': coordinates[3].split(',')[0],
+        'y4': coordinates[3].split(',')[1]
     }
     with app.app_context(): # create a context for the database access
         PolygonCoordinates.query.filter_by(id=1).update(updated_coordinates)
