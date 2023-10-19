@@ -118,9 +118,12 @@ def submitCoordinates():
 # cap = cv2.VideoCapture("rtsp://admin:admin123@id.labkom.us:3693/Streaming/Channels/201") #indoor office cctv
 # cap = cv2.VideoCapture(2) #using webcam
 cap = cv2.VideoCapture('rtsp://admin:admin123@192.168.22.176:554/Streaming/Channels/201') #using ip camera
+# cap = cv2.VideoCapture('CCTV_Footage.mp4') #using webcam
 tracker=Tracker()
 
 people_list = {}
+enter_list = {}
+out_list = {}
 
 colors = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for j in range(10)]
 
@@ -165,16 +168,43 @@ def annotatedStream():
                     x2 = int(x2)
                     y2 = int(y2)
                     track_id = track.track_id
+
+                    # Line counter
+                    m1 = (poly_zone['y2'] - poly_zone['y1'])/(poly_zone['x2'] - poly_zone['x1'])
+                    b1 = poly_zone['y1'] - (poly_zone['x1']*m1)
+                    result1 = y2 - ((m1*x2)+b1)
+
+                    m2 = (poly_zone['y4'] - poly_zone['y3'])/(poly_zone['x4'] - poly_zone['x3'])
+                    b2 = poly_zone['y3'] - (poly_zone['x3']*m2)
+                    result2 = y2 - ((m2*x2)+b2)
+
+                    if (result1 <= 3 and result1 >= 0) or (result1 >= (-3) and result1 <= 0)  :
+                        if track_id not in out_list.keys():
+                            enter_list[track_id] = [x2, y2]
+                    
+                    if (result2 <= 3 and result2 >= 0) or (result2 >= (-3) and result2 <= 0)  :
+                        if track_id not in enter_list.keys():
+                            out_list[track_id] = [x2, y2]
+
                     dist = cv2.pointPolygonTest(polygon_zone, (x2,y2), False)
-                    if dist == 1:
-                        people_list[track_id] = y1
+                    if dist == 1 and (track_id in out_list.keys() or track_id in enter_list.keys()):
+                        people_list[track_id] = y2
                     cv2.putText(frame, (str(track_id)),(x1,y1),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (colors[track_id % len(colors)]), 3)
-
+            print('Enter : ', enter_list)
+            print('Out : ', out_list)
             # annotate the frame using polygon
             
-            frame=cv2.polylines(frame,[np.array(polygon_zone,np.int32)],True,(0,0,255),4,cv2.LINE_AA)
-            cv2.putText(frame, ("Count :"+str(len(people_list))),(100,100),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
+            frame=cv2.polylines(frame,[np.array(polygon_zone,np.int32)],True,(0,0,0),4,cv2.LINE_AA)
+            cv2.line(frame,(poly_zone['x1'], poly_zone['y1']),(poly_zone['x2'], poly_zone['y2']),(0,255,0),2)
+            
+
+
+            cv2.line(frame,(poly_zone['x3'], poly_zone['y3']),(poly_zone['x4'], poly_zone['y4']),(0,0,255),2)
+            cv2.putText(frame, ("Passed Threshold :"+str(len(people_list))),(20,100),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
+            cv2.putText(frame, ("Entered :"+str(len(enter_list))),(20,150),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
+            cv2.putText(frame, ("Out :"+str(len(out_list))),(20,200),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
+            cv2.putText(frame, ("In Room :"+str(len(enter_list)-len(out_list))),(20,250),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
             buffer=cv2.imencode('.jpg',frame)[1] # change to index 1 to get the buffer
             frame=buffer.tobytes()# converting the image to bytes
             yield(b'--frame\r\n' # yielding the frame for display
