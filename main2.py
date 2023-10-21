@@ -13,7 +13,7 @@ from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_utils import create_database, database_exists
 from sqlalchemy.sql import func #import sqlalchemy functions
-from sqlalchemy import update,create_engine,select #import sqlalchemy update function and create_engine function
+from sqlalchemy import update,create_engine,select, insert #import sqlalchemy update function and create_engine function
 from sqlalchemy.orm import sessionmaker #import sqlalchemy session maker function
 
 app=Flask(__name__,static_url_path='/static') #initializing the flask app with the name 'app' and static_url_path for static files
@@ -29,6 +29,8 @@ app.config['SQLALCHEMY_DATABASE_URI']=engine_url
 engine=create_engine(engine_url)
 Session=sessionmaker(engine)
 db=SQLAlchemy(app) #initializing the database with the name 'db'
+
+
 class PolygonCoordinates(db.Model):
     id=db.Column(db.Integer,primary_key=True,autoincrement=True)
     preference_num=db.Column(db.Integer,nullable=False)
@@ -55,6 +57,20 @@ class PolygonCoordinates(db.Model):
         self.y4=y4
         self.createdAt=createdAt
         self.updatedAt=updatedAt
+
+class Occupancy(db.Model):
+    __tablename__ = 'd_occupancy'
+    id=db.Column(db.Integer,primary_key=True,autoincrement=True)
+    enter_total=db.Column(db.Integer,nullable=False)
+    out_total=db.Column(db.Integer,nullable=False)
+    in_room=db.Column(db.Integer,nullable=False)
+    createdAt=db.Column(db.DateTime,nullable=False)
+
+    def __init__(self, enter_total, out_total, in_room, createdAt):
+        self.enter_total = enter_total
+        self.out_total = out_total
+        self.in_room = in_room
+        self.createdAt = createdAt
 # ========== DB CONNECTION -- SQLALCHEMY (END) ===========
 
 
@@ -109,6 +125,12 @@ def submitCoordinates():
         PolygonCoordinates.query.filter_by(id=1).update(updated_coordinates)
         db.session.commit()
   
+    return redirect('/')
+@app.route('/submit_data',methods=['POST'])
+def submitData():
+    new_data = Occupancy(len(enter_list), len(out_list), len(enter_list)-len(out_list), func.now())
+    db.session.add(new_data)
+    db.session.commit()
     return redirect('/')
 
 
@@ -178,11 +200,11 @@ def annotatedStream():
                     b2 = poly_zone['y3'] - (poly_zone['x3']*m2)
                     result2 = y2 - ((m2*x2)+b2)
 
-                    if (result1 <= 3 and result1 >= 0) or (result1 >= (-3) and result1 <= 0)  :
+                    if (result1 <= 5 and result1 >= 0) or (result1 >= (-2) and result1 <= 0)  :
                         if track_id not in out_list.keys():
                             enter_list[track_id] = [x2, y2]
                     
-                    if (result2 <= 3 and result2 >= 0) or (result2 >= (-3) and result2 <= 0)  :
+                    if (result2 <= 2 and result2 >= 0) or (result2 >= (-5) and result2 <= 0)  :
                         if track_id not in enter_list.keys():
                             out_list[track_id] = [x2, y2]
 
