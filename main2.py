@@ -13,7 +13,7 @@ from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_utils import create_database, database_exists
 from sqlalchemy.sql import func #import sqlalchemy functions
-from sqlalchemy import update,create_engine,select #import sqlalchemy update function and create_engine function
+from sqlalchemy import update,create_engine,select, insert #import sqlalchemy update function and create_engine function
 from sqlalchemy.orm import sessionmaker #import sqlalchemy session maker function
 
 app=Flask(__name__,static_url_path='/static') #initializing the flask app with the name 'app' and static_url_path for static files
@@ -29,6 +29,8 @@ app.config['SQLALCHEMY_DATABASE_URI']=engine_url
 engine=create_engine(engine_url)
 Session=sessionmaker(engine)
 db=SQLAlchemy(app) #initializing the database with the name 'db'
+
+
 class PolygonCoordinates(db.Model):
     id=db.Column(db.Integer,primary_key=True,autoincrement=True)
     preference_num=db.Column(db.Integer,nullable=False)
@@ -55,6 +57,20 @@ class PolygonCoordinates(db.Model):
         self.y4=y4
         self.createdAt=createdAt
         self.updatedAt=updatedAt
+
+class Occupancy(db.Model):
+    __tablename__ = 'd_occupancy'
+    id=db.Column(db.Integer,primary_key=True,autoincrement=True)
+    enter_total=db.Column(db.Integer,nullable=False)
+    out_total=db.Column(db.Integer,nullable=False)
+    in_room=db.Column(db.Integer,nullable=False)
+    createdAt=db.Column(db.DateTime,nullable=False)
+
+    def __init__(self, enter_total, out_total, in_room, createdAt):
+        self.enter_total = enter_total
+        self.out_total = out_total
+        self.in_room = in_room
+        self.createdAt = createdAt
 # ========== DB CONNECTION -- SQLALCHEMY (END) ===========
 
 
@@ -110,6 +126,12 @@ def submitCoordinates():
         db.session.commit()
   
     return redirect('/')
+@app.route('/submit_data',methods=['POST'])
+def submitData():
+    new_data = Occupancy(len(enter_list), len(out_list), len(enter_list)-len(out_list), func.now())
+    db.session.add(new_data)
+    db.session.commit()
+    return redirect('/')
 
 
 # ========== GETTER AND SETTER [COORDINATES] FUNCTION (END) ===========
@@ -118,9 +140,12 @@ def submitCoordinates():
 # cap = cv2.VideoCapture("rtsp://admin:admin123@id.labkom.us:3693/Streaming/Channels/201") #indoor office cctv
 # cap = cv2.VideoCapture(2) #using webcam
 cap = cv2.VideoCapture('rtsp://admin:admin123@192.168.22.176:554/Streaming/Channels/201') #using ip camera
+# cap = cv2.VideoCapture('CCTV_Footage.mp4') #using webcam
 tracker=Tracker()
 
 people_list = {}
+enter_list = {}
+out_list = {}
 
 colors = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for j in range(10)]
 
@@ -165,16 +190,43 @@ def annotatedStream():
                     x2 = int(x2)
                     y2 = int(y2)
                     track_id = track.track_id
+
+                    # Line counter
+                    m1 = (poly_zone['y2'] - poly_zone['y1'])/(poly_zone['x2'] - poly_zone['x1'])
+                    b1 = poly_zone['y1'] - (poly_zone['x1']*m1)
+                    result1 = y2 - ((m1*x2)+b1)
+
+                    m2 = (poly_zone['y4'] - poly_zone['y3'])/(poly_zone['x4'] - poly_zone['x3'])
+                    b2 = poly_zone['y3'] - (poly_zone['x3']*m2)
+                    result2 = y2 - ((m2*x2)+b2)
+
+                    if (result1 <= 5 and result1 >= 0) or (result1 >= (-2) and result1 <= 0)  :
+                        if track_id not in out_list.keys():
+                            enter_list[track_id] = [x2, y2]
+                    
+                    if (result2 <= 2 and result2 >= 0) or (result2 >= (-5) and result2 <= 0)  :
+                        if track_id not in enter_list.keys():
+                            out_list[track_id] = [x2, y2]
+
                     dist = cv2.pointPolygonTest(polygon_zone, (x2,y2), False)
-                    if dist == 1:
-                        people_list[track_id] = y1
+                    if dist == 1 and (track_id in out_list.keys() or track_id in enter_list.keys()):
+                        people_list[track_id] = y2
                     cv2.putText(frame, (str(track_id)),(x1,y1),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (colors[track_id % len(colors)]), 3)
-
+            print('Enter : ', enter_list)
+            print('Out : ', out_list)
             # annotate the frame using polygon
             
-            frame=cv2.polylines(frame,[np.array(polygon_zone,np.int32)],True,(0,0,255),4,cv2.LINE_AA)
-            cv2.putText(frame, ("Count :"+str(len(people_list))),(100,100),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
+            frame=cv2.polylines(frame,[np.array(polygon_zone,np.int32)],True,(0,0,0),4,cv2.LINE_AA)
+            cv2.line(frame,(poly_zone['x1'], poly_zone['y1']),(poly_zone['x2'], poly_zone['y2']),(0,255,0),2)
+            
+
+
+            cv2.line(frame,(poly_zone['x3'], poly_zone['y3']),(poly_zone['x4'], poly_zone['y4']),(0,0,255),2)
+            cv2.putText(frame, ("Passed Threshold :"+str(len(people_list))),(20,100),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
+            cv2.putText(frame, ("Entered :"+str(len(enter_list))),(20,150),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
+            cv2.putText(frame, ("Out :"+str(len(out_list))),(20,200),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
+            cv2.putText(frame, ("In Room :"+str(len(enter_list)-len(out_list))),(20,250),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
             buffer=cv2.imencode('.jpg',frame)[1] # change to index 1 to get the buffer
             frame=buffer.tobytes()# converting the image to bytes
             yield(b'--frame\r\n' # yielding the frame for display
