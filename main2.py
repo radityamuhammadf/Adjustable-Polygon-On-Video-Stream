@@ -1,6 +1,7 @@
 from ultralytics import YOLO
 import random
 from deepsort import Tracker
+import math
 
 
 # importing the Computer Vision module
@@ -137,9 +138,9 @@ def submitData():
 # ========== GETTER AND SETTER [COORDINATES] FUNCTION (END) ===========
 
 # ========== VIDEO STREAM (START) ===========
-# cap = cv2.VideoCapture("rtsp://admin:admin123@id.labkom.us:3693/Streaming/Channels/201") #indoor office cctv
-# cap = cv2.VideoCapture(2) #using webcam
-cap = cv2.VideoCapture('rtsp://admin:admin123@192.168.22.176:554/Streaming/Channels/201') #using ip camera
+cap = cv2.VideoCapture("rtsp://admin:admin123@sg2.labkom.us:5465/Streaming/Channels/201") #indoor office cctv
+# cap = cv2.VideoCapture(1) #using webcam
+# cap = cv2.VideoCapture('rtsp://admin:admin123@192.168.22.176:554/Streaming/Channels/201') #using ip camera
 # cap = cv2.VideoCapture('CCTV_Footage.mp4') #using webcam
 tracker=Tracker()
 
@@ -149,6 +150,11 @@ out_list = {}
 
 colors = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for j in range(10)]
 
+def distance(x1, y1, x2, y2):
+  num_a = math.pow((x2-x1), 2)
+  num_b = math.pow((y2-y1), 2)
+  result = math.sqrt(num_a + num_b)
+  return result
 
 # polygon zone preview
 def annotatedStream():
@@ -159,7 +165,7 @@ def annotatedStream():
                         [poly_zone['x3'],poly_zone['y3']],
                         [poly_zone['x4'],poly_zone['y4']]],
                         np.int32)
-    model = YOLO('yolov8n.pt')    
+    model = YOLO('yolov8s.pt')    
     while True:
         # reading frames from the video
         success, frame = cap.read()
@@ -169,7 +175,7 @@ def annotatedStream():
         else:
             # converting the collected frame to image
             frame=cv2.resize(frame,(640,480))
-            results = model.predict(frame, classes=0)
+            results = model.predict(frame, classes=0, imgsz=320)
             
             for result in results:
                 detections = []
@@ -191,22 +197,52 @@ def annotatedStream():
                     y2 = int(y2)
                     track_id = track.track_id
 
+                    xa = poly_zone['x1']
+                    ya = poly_zone['y1']
+                    xb = poly_zone['x2']
+                    yb = poly_zone['y2']
+                    xc = poly_zone['x3']
+                    yc = poly_zone['y3']
+                    xd = poly_zone['x4']
+                    yd = poly_zone['y4']
+
+                    result_a = distance(xa, ya, x2, y2) + distance(xb, yb, x2, y2)
+                    result_b = distance(xa, ya, xb, yb)
+                    result1 = round(result_a, 3) - round(result_b, 3)
+
+                    result_c = distance(xc, yc, x2, y2) + distance(xd, yd, x2, y2)
+                    result_d = distance(xc, yc, xd, yd)
+                    result3 = round(result_c, 3) - round(result_d, 3)
+
+                    # =========================OLD==============================
                     # Line counter
-                    m1 = (poly_zone['y2'] - poly_zone['y1'])/(poly_zone['x2'] - poly_zone['x1'])
-                    b1 = poly_zone['y1'] - (poly_zone['x1']*m1)
-                    result1 = y2 - ((m1*x2)+b1)
+                    # m1 = (poly_zone['y2'] - poly_zone['y1'])/(poly_zone['x2'] - poly_zone['x1'])
+                    # b1 = poly_zone['y1'] - (poly_zone['x1']*m1)
+                    # result1 = y2 - ((m1*x2)+b1)
+                    # print(result1)
 
-                    m2 = (poly_zone['y4'] - poly_zone['y3'])/(poly_zone['x4'] - poly_zone['x3'])
-                    b2 = poly_zone['y3'] - (poly_zone['x3']*m2)
-                    result2 = y2 - ((m2*x2)+b2)
+                    # m2 = (poly_zone['y4'] - poly_zone['y3'])/(poly_zone['x4'] - poly_zone['x3'])
+                    # b2 = poly_zone['y3'] - (poly_zone['x3']*m2)
+                    # result2 = y2 - ((m2*x2)+b2)
+                    # print(result2)
 
-                    if (result1 <= 5 and result1 >= 0) or (result1 >= (-2) and result1 <= 0)  :
+                    if  result1 <= 1 and result1 >= -1:
                         if track_id not in out_list.keys():
                             enter_list[track_id] = [x2, y2]
                     
-                    if (result2 <= 2 and result2 >= 0) or (result2 >= (-5) and result2 <= 0)  :
+                    if  result3 <= 1 and result3 >= -1:
                         if track_id not in enter_list.keys():
                             out_list[track_id] = [x2, y2]
+
+                    # ===============OLD=========================
+
+                    # if (result1 <= 3 and result1 >= 0) or (result1 >= (-3) and result1 <= 0)  :
+                    #     if track_id not in out_list.keys():
+                    #         enter_list[track_id] = [x2, y2]
+
+                    # if (result2 <= 3 and result2 >= 0) or (result2 >= (-3) and result2 <= 0)  :
+                    #     if track_id not in enter_list.keys():
+                    #         out_list[track_id] = [x2, y2]
 
                     dist = cv2.pointPolygonTest(polygon_zone, (x2,y2), False)
                     if dist == 1 and (track_id in out_list.keys() or track_id in enter_list.keys()):
