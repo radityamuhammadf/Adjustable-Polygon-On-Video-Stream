@@ -1,3 +1,8 @@
+from ultralytics import YOLO
+import random
+from deepsort import Tracker
+
+
 # importing the Computer Vision module
 import cv2
 from flask import Flask,Response,render_template,request,redirect
@@ -55,6 +60,7 @@ class PolygonCoordinates(db.Model):
 
 # ========== GETTER AND SETTER [COORDINATES] FUNCTION (START) ===========
 '''Getting Coordinate from The Database'''
+
 def getCoordinates():
     poly_coordinates={} #default value for polygon coordinates 
     with app.app_context(): # create a context for the database access
@@ -87,18 +93,44 @@ def submitCoordinates():
     # split the coordinates value into array
     coordinates=coordinates.split(' ')
     print ("received coordinates -> ",coordinates)
+    updated_coordinates = {
+        'x1': coordinates[0],
+        'y1': coordinates[1],
+        'x2': coordinates[2],
+        'y2': coordinates[3],
+        'x3': coordinates[4],
+        'y3': coordinates[5],
+        'x4': coordinates[6],
+        'y4': coordinates[7]
+    }
     # query for updating the coordinates value
     # ORM Approach for Update Coordinate
-    updated_coordinates = {
-        'x1': coordinates[0].split(',')[0],
-        'y1': coordinates[0].split(',')[1],
-        'x2': coordinates[1].split(',')[0],
-        'y2': coordinates[1].split(',')[1],
-        'x3': coordinates[2].split(',')[0],
-        'y3': coordinates[2].split(',')[1],
-        'x4': coordinates[3].split(',')[0],
-        'y4': coordinates[3].split(',')[1]
-    }
+    # index error handler (fail)
+    # try:
+    #     updated_coordinates = {
+    #         'x1': coordinates[0],
+    #         'y1': coordinates[1],
+    #         'x2': coordinates[2],
+    #         'y2': coordinates[3],
+    #         'x3': coordinates[4],
+    #         'y3': coordinates[5],
+    #         'x4': coordinates[6],
+    #         'y4': coordinates[7]
+    #     }
+    #     if IndexError:
+    #         updated_coordinates = {
+    #         'x1': coordinates[0].split(',')[0],
+    #         'y1': coordinates[0].split(',')[1],
+    #         'x2': coordinates[1].split(',')[0],
+    #         'y2': coordinates[1].split(',')[1],
+    #         'x3': coordinates[2].split(',')[0],
+    #         'y3': coordinates[2].split(',')[1],
+    #         'x4': coordinates[3].split(',')[0],
+    #         'y4': coordinates[3].split(',')[1]
+    #         }
+    # finally:
+    #     print(updated_coordinates)
+
     with app.app_context(): # create a context for the database access
         PolygonCoordinates.query.filter_by(id=1).update(updated_coordinates)
         db.session.commit()
@@ -109,30 +141,73 @@ def submitCoordinates():
 # ========== GETTER AND SETTER [COORDINATES] FUNCTION (END) ===========
 
 # ========== VIDEO STREAM (START) ===========
-cap = cv2.VideoCapture("rtsp://admin:admin123@id.labkom.us:3693/Streaming/Channels/301") #indoor office cctv
-# cap = cv2.VideoCapture(0) #using webcam
-# cap = cv2.VideoCapture('rtsp://admin:admin123@192.168.22.176:554/Streaming/Channels/202') #using ip camera
+# cap = cv2.VideoCapture("rtsp://admin:admin123@id.labkom.us:3693/Streaming/Channels/201") #indoor office cctv
+# cap = cv2.VideoCapture(2) #using webcam
+cap = cv2.VideoCapture('rtsp://admin:admin123@192.168.22.176:554/Streaming/Channels/201') #using ip camera
+tracker=Tracker()
+
+people_list = {}
+
+colors = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for j in range(10)]
+
+
+model = YOLO('yolov8m.pt')
+model.export(format='openvino') #exporting the model to OpenVINO format
+model_ov=YOLO('yolov8m_openvino_model/') #using the optimized model (OpenVINO)
 
 # polygon zone preview
 def annotatedStream():
     # temporarily stored here
+    # initiating the polygon zone's coordinate
     poly_zone=getCoordinates()
     polygon_zone=np.array([[poly_zone['x1'],poly_zone['y1']],
                         [poly_zone['x2'],poly_zone['y2']],
                         [poly_zone['x3'],poly_zone['y3']],
                         [poly_zone['x4'],poly_zone['y4']]],
-                        np.int32)    
+                        np.int32)
+    # initiating the YOLO model
+
+    # infinite loop for streaming 
     while True:
         # reading frames from the video
         success, frame = cap.read()
-
+        
         if not success:
             break
         else:
             # converting the collected frame to image
             frame=cv2.resize(frame,(640,480))
+            results = model_ov.predict(frame, classes=0)
+            
+            for result in results:
+                detections = [] # list of  detected id
+                for r in result.boxes.data.tolist():
+                    x1, y1, x2, y2, score, class_id = r #assigning the result to the variable
+                    x1 = int(x1)
+                    y1 = int(y1)
+                    x2 = int(x2)
+                    y2 = int(y2)
+                    class_id = int(class_id)
+                    detections.append([x1, y1, x2, y2, score]) #appending the result to the list
+                tracker.update(frame, detections) #using the tracker to track the detected object with "detections" list as the parameter
+                for track in tracker.tracks:
+                    bbox = track.bbox
+                    x1, y1, x2, y2 = bbox #invisible box made by the deepsort tracker
+                    x1 = int(x1)
+                    y1 = int(y1)
+                    x2 = int(x2)
+                    y2 = int(y2)
+                    track_id = track.track_id
+                    dist = cv2.pointPolygonTest(polygon_zone, (x2,y2), False) #checking if the object is inside the polygon zone
+                    if dist == 1:
+                        people_list[track_id] = y1
+                    cv2.putText(frame, (str(track_id)),(x1,y1),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (colors[track_id % len(colors)]), 3)
+
             # annotate the frame using polygon
+            
             frame=cv2.polylines(frame,[np.array(polygon_zone,np.int32)],True,(0,0,255),4,cv2.LINE_AA)
+            cv2.putText(frame, ("Count :"+str(len(people_list))),(100,100),cv2.FONT_HERSHEY_COMPLEX,0.8,(0,0,255),2)
             buffer=cv2.imencode('.jpg',frame)[1] # change to index 1 to get the buffer
             frame=buffer.tobytes()# converting the image to bytes
             yield(b'--frame\r\n' # yielding the frame for display
