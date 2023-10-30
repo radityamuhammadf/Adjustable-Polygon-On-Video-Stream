@@ -2,6 +2,8 @@ from ultralytics import YOLO
 import random
 from deepsort import Tracker
 import math
+from threading import Timer
+from multiprocessing import Process
 
 
 # importing the Computer Vision module
@@ -134,6 +136,9 @@ def submitData():
     db.session.commit()
     return redirect('/')
 
+def reloadCamera():
+    return redirect('/')
+
 
 # ========== GETTER AND SETTER [COORDINATES] FUNCTION (END) ===========
 
@@ -156,27 +161,58 @@ def distance(x1, y1, x2, y2):
   result = math.sqrt(num_a + num_b)
   return result
 
+def timerImage(cap):
+    timer = Timer(0.5, lambda: None)  # just returns None on timeout
+    timer.start()
+    frame = None
+    success = False
+    while timer.is_alive():
+        success, frame = cap.read()
+        return success, frame
+    return success, frame
+
+
 # polygon zone preview
 def annotatedStream():
     # temporarily stored here
+    cap = cv2.VideoCapture("rtsp://admin:admin123@sg2.labkom.us:5465/Streaming/Channels/201") #indoor office cctv
+    # cap = cv2.VideoCapture(1) #using webcam
+    # cap = cv2.VideoCapture('rtsp://admin:admin123@192.168.22.176:554/Streaming/Channels/201') #using ip camera
+    # cap = cv2.VideoCapture('CCTV_Footage.mp4') #using webcam
     poly_zone=getCoordinates()
     polygon_zone=np.array([[poly_zone['x1'],poly_zone['y1']],
                         [poly_zone['x2'],poly_zone['y2']],
                         [poly_zone['x3'],poly_zone['y3']],
                         [poly_zone['x4'],poly_zone['y4']]],
                         np.int32)
-    model = YOLO('yolov8s.pt')    
+    model = YOLO('yolov8m.pt')
+
+    # model.export(format='openvino') 
+     
+    # ov_model = YOLO('yolov8s_openvino_model/')  
+    reloaded = 0 
     while True:
         # reading frames from the video
-        success, frame = cap.read()
-
+        
+        # success, frame = cap.read()
+        frame = None
+        success = False
+        success, frame = timerImage(cap)
+        if frame is None :
+            print('Reload')
+            print('Please')
+            reloaded+=1
+            cap = cv2.VideoCapture("rtsp://admin:admin123@sg2.labkom.us:5465/Streaming/Channels/201") #indoor office cctv
+            continue
+        
         if not success:
             break
         else:
             # converting the collected frame to image
             frame=cv2.resize(frame,(640,480))
-            results = model.predict(frame, classes=0, imgsz=320)
+            results = model.predict(frame, classes=0, stream_buffer=True, stream=True, imgsz=256, device='CPU')
             
+            print('reloaded ', reloaded)
             for result in results:
                 detections = []
                 for r in result.boxes.data.tolist():
