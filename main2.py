@@ -3,7 +3,9 @@ import random
 from deepsort import Tracker
 import math
 from threading import Timer
+import time
 from multiprocessing import Process
+# from utils import make_celery
 
 
 # importing the Computer Vision module
@@ -31,6 +33,9 @@ if not database_exists(engine_url):
 app.config['SQLALCHEMY_DATABASE_URI']=engine_url
 engine=create_engine(engine_url)
 Session=sessionmaker(engine)
+# app.config["CELERY_CONFIG"] = {"broker_url": "redis://redis", "result_backend": "redis://redis"}
+# celery = make_celery(app)
+# celery.set_default()
 db=SQLAlchemy(app) #initializing the database with the name 'db'
 
 
@@ -143,7 +148,8 @@ def reloadCamera():
 # ========== GETTER AND SETTER [COORDINATES] FUNCTION (END) ===========
 
 # ========== VIDEO STREAM (START) ===========
-cap = cv2.VideoCapture("rtsp://admin:admin123@sg2.labkom.us:5465/Streaming/Channels/201") #indoor office cctv
+
+# cap = cv2.VideoCapture("rtsp://admin:admin123@sg2.labkom.us:5465/Streaming/Channels/201") #indoor office cctv
 # cap = cv2.VideoCapture(1) #using webcam
 # cap = cv2.VideoCapture('rtsp://admin:admin123@192.168.22.176:554/Streaming/Channels/201') #using ip camera
 # cap = cv2.VideoCapture('CCTV_Footage.mp4') #using webcam
@@ -165,17 +171,21 @@ def timerImage(cap):
     timer = Timer(0.5, lambda: None)  # just returns None on timeout
     timer.start()
     frame = None
-    success = False
+    success = None
+    failed = True
     while timer.is_alive():
         success, frame = cap.read()
-        return success, frame
-    return success, frame
+        failed = False
+        return success, frame, failed
+    return success, frame, failed
 
 
 # polygon zone preview
 def annotatedStream():
     # temporarily stored here
+    print('entered')
     cap = cv2.VideoCapture("rtsp://admin:admin123@sg2.labkom.us:5465/Streaming/Channels/201") #indoor office cctv
+    # cap = cv2.VideoCapture("rtsp://admin:admin123@eu.labkom.us:8253/cam/realmonitor?channel=2&subtype=1")
     # cap = cv2.VideoCapture(1) #using webcam
     # cap = cv2.VideoCapture('rtsp://admin:admin123@192.168.22.176:554/Streaming/Channels/201') #using ip camera
     # cap = cv2.VideoCapture('CCTV_Footage.mp4') #using webcam
@@ -185,7 +195,7 @@ def annotatedStream():
                         [poly_zone['x3'],poly_zone['y3']],
                         [poly_zone['x4'],poly_zone['y4']]],
                         np.int32)
-    model = YOLO('yolov8m.pt')
+    model = YOLO('yolov8n.pt')
 
     # model.export(format='openvino') 
      
@@ -195,18 +205,27 @@ def annotatedStream():
         # reading frames from the video
         
         # success, frame = cap.read()
-        frame = None
-        success = False
-        success, frame = timerImage(cap)
-        if frame is None :
+        failed = False
+        success, frame, failed = timerImage(cap)
+        if success == False:
+            print('entered 2')
+            cap = cv2.VideoCapture("https://cdn.osxdaily.com/wp-content/uploads/2013/12/there-is-no-connected-camera-mac.jpg")
+            success, frame = cap.read()
+            frame=cv2.resize(frame,(640,480))
+            # buffer=cv2.imencode('.jpg',frame)[1] # change to index 1 to get the buffer
+            # frame=buffer.tobytes()# converting the image to bytes
+            # yield(b'--frame\r\n' # yielding the frame for display
+            #       b'Content-Type: image/jpeg\r\n\r\n'+frame+b'\r\n')
+            time.sleep(60)
+            cap = cv2.VideoCapture("rtsp://admin:admin123@sg2.labkom.us:5465/Streaming/Channels/201") 
+        
+        if failed == True :
             print('Reload')
             print('Please')
             reloaded+=1
             cap = cv2.VideoCapture("rtsp://admin:admin123@sg2.labkom.us:5465/Streaming/Channels/201") #indoor office cctv
             continue
-        
-        if not success:
-            break
+            # break
         else:
             # converting the collected frame to image
             frame=cv2.resize(frame,(640,480))
